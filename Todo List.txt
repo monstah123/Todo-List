@@ -1,0 +1,203 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2709
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 <!DOCTYPE html>\
+<html>\
+<head>\
+    <meta charset="UTF-8">\
+    <title>Todo List with Reminders</title>\
+    <style>\
+        /* Styles for the reminder bar */\
+        #reminderBar \{\
+            background-color: green;\
+            color: white;\
+            font-size: 1.5em;\
+            padding: 10px 0;\
+            text-align: center;\
+            margin-bottom: 20px;\
+            font-weight: bold;\
+        \}\
+        /* Styles for the "Enable Sounds" button */\
+        #enableSound \{\
+            background-color: green;\
+            color: white;\
+            border: none;\
+            padding: 10px 20px;\
+            font-size: 16px;\
+            cursor: pointer;\
+            transition: background-color 0.3s ease;\
+        \}\
+        #enableSound:hover \{\
+            background-color: darkgreen;\
+        \}\
+        /* Styles for the "Add Task" button */\
+        .add-btn \{\
+            background-color: green;\
+            color: white;\
+            border: none;\
+            padding: 10px 20px;\
+            font-size: 16px;\
+            cursor: pointer;\
+            transition: background-color 0.3s ease;\
+        \}\
+        .add-btn:hover \{\
+            background-color: darkgreen;\
+        \}\
+        /* General styling */\
+        body \{\
+            font-family: Arial, sans-serif;\
+            margin: 20px;\
+        \}\
+        form \{\
+            display: flex;\
+            margin-bottom: 20px;\
+        \}\
+        input \{\
+            padding: 10px;\
+            font-size: 16px;\
+        \}\
+        input[type="datetime-local"] \{\
+            flex: 1;\
+        \}\
+        #taskList \{\
+            list-style-type: none;\
+            padding: 0;\
+        \}\
+        #taskList li \{\
+            margin: 10px 0;\
+            display: flex;\
+        \}\
+        #taskList li input[type="checkbox"] \{\
+            margin-right: 10px;\
+        \}\
+        #taskList li button \{\
+            margin-left: auto;\
+            background-color: red;\
+            color: white;\
+            border: none;\
+            padding: 5px 10px;\
+        \}\
+        /* Styles for notifications */\
+        #notification \{\
+            display: none;\
+            background-color: yellow;\
+            padding: 10px;\
+            margin-top: 20px;\
+        \}\
+    </style>\
+</head>\
+<body>\
+    <!-- Green reminder bar -->\
+    <div id="reminderBar">Set Reminder</div>\
+    \
+    <!-- Todo list heading -->\
+    <h1>Todo List with Reminders</h1>\
+    \
+    <!-- Form to add tasks -->\
+    <form id="taskForm">\
+        <input type="text" id="taskInput" placeholder="Enter task">\
+        <input type="datetime-local" id="timeInput">\
+        <button type="submit" class="add-btn">Add Task</button>\
+    </form>\
+    \
+    <!-- Enable Sounds button -->\
+    <button id="enableSound">Enable Sounds</button>\
+    \
+    <!-- Notification div -->\
+    <div id="notification"></div>\
+    \
+    <!-- List of tasks -->\
+    <ul id="taskList"></ul>\
+    \
+    <!-- JavaScript for functionality -->\
+    <script>\
+        let soundEnabled = false;\
+        let audioCtx;\
+\
+        const taskForm = document.getElementById('taskForm');\
+        const taskList = document.getElementById('taskList');\
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];\
+\
+        const soundButton = document.getElementById('enableSound');\
+        soundButton.addEventListener('click', () => \{\
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();\
+            soundEnabled = true;\
+            console.log('Sound enabled:', soundEnabled);\
+            console.log('AudioContext:', audioCtx);\
+        \});\
+\
+        function saveTasks() \{\
+            localStorage.setItem('tasks', JSON.stringify(tasks));\
+        \}\
+\
+        function addTaskToPage(task) \{\
+            const li = document.createElement('li');\
+            li.innerHTML = `<input type="checkbox" $\{task.completed ? 'checked' : ''\}>\
+                            <span>$\{task.text\}</span>\
+                            <input type="datetime-local" value="$\{task.time\}">\
+                            <button onclick="removeTask(this)">Remove</button>`;\
+            taskList.appendChild(li);\
+        \}\
+\
+        function setReminder(task) \{\
+            const reminderTime = new Date(task.time).getTime();\
+            const now = Date.now();\
+            if (reminderTime > now) \{\
+                setTimeout(() => \{\
+                    document.getElementById('notification').innerText = `Reminder: $\{task.text\}`;\
+                    document.getElementById('notification').style.display = 'block';\
+                    setTimeout(() => \{\
+                        document.getElementById('notification').style.display = 'none';\
+                    \}, 3000);\
+                    playSound();\
+                \}, reminderTime - now);\
+            \}\
+        \}\
+\
+        function removeTask(button) \{\
+            const li = button.closest('li');\
+            const taskText = li.querySelector('span').innerText;\
+            tasks = tasks.filter(task => task.text !== taskText);\
+            saveTasks();\
+            li.remove();\
+        \}\
+\
+        taskForm.addEventListener('submit', function(event) \{\
+            event.preventDefault();\
+            const text = taskInput.value;\
+            const time = timeInput.value;\
+            if (text && time) \{\
+                const task = \{ text, time, completed: false \};\
+                tasks.push(task);\
+                addTaskToPage(task);\
+                setReminder(task);\
+                saveTasks();\
+                taskInput.value = '';\
+                timeInput.value = '';\
+            \}\
+        \});\
+\
+        tasks.forEach(addTaskToPage);\
+\
+        function playSound() \{\
+            if (audioCtx && soundEnabled) \{\
+                console.log('Playing sound...');\
+                const oscillator = audioCtx.createOscillator();\
+                oscillator.type = 'sine';\
+                oscillator.frequency.value = 440;\
+                oscillator.connect(audioCtx.destination);\
+                oscillator.start();\
+                setTimeout(() => \{\
+                    oscillator.stop();\
+                \}, 500);\
+            \} else \{\
+                console.log('Sound not enabled or AudioContext not available.');\
+            \}\
+        \}\
+    </script>\
+</body>\
+</html>}
